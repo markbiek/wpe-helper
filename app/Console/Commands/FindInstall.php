@@ -43,6 +43,12 @@ class FindInstall extends Command {
      * @return mixed
      */
     public function handle() {
+        if (Install::count() <= 0) {
+            $this->info("Loading initial list of installs");
+
+            $this->call('installs:cache');
+        }
+
         $install = $this->argument('install');
         $includeStaging = $this->option('staging');
         $includeInactive = $this->option('inactive');
@@ -72,7 +78,7 @@ class FindInstall extends Command {
         if ($this->option('name-only')) {
             echo $item->name;
         } else if ($this->option('output') == 'pretty') {
-            $this->info("name:\t{$item->name}");
+            $this->info("\nname:\t{$item->name}");
             $this->info("domain:\t{$item->primary_domain}");
             $this->info("environment:\t{$item->environment}");
             $this->info("url:\t{$item->url}");

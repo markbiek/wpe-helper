@@ -16,6 +16,12 @@ class Install extends Model {
         'php_version',
     ];
 
+    protected $appends = ['url'];
+
+    public function getUrlAttribute() {
+        return "https://my.wpengine.com/installs/{$this->name}";
+    }
+
     public static function make(\stdClass $item) {
         return Install::create([
             'wpe_id' => $item->id,

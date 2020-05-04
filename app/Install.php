@@ -15,4 +15,15 @@ class Install extends Model {
         'active',
         'php_version',
     ];
+
+    public static function make(\stdClass $item) {
+        return Install::create([
+            'wpe_id' => $item->id,
+            'name' => $item->name,
+            'environment' => $item->environment,
+            'primary_domain' => $item->primary_domain,
+            'active' => $item->status === 'active',
+            'php_version' => $item->php_version,
+        ]);
+    }
 }

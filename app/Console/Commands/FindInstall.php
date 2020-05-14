@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 use App\Install;
 
@@ -54,21 +53,7 @@ class FindInstall extends Command {
         $includeInactive = $this->option('inactive');
         $nameOnly = $this->option('name-only');
 
-        $query = Install::where(DB::raw('true'), true);
-        if (!$includeStaging) {
-            $query = $query->where('environment', 'production');
-        }
-        if (!$includeInactive) {
-            $query = $query->where('active', true);
-        }
-
-        $query->where(function ($query) use ($install) {
-            $query
-                ->where('name', 'LIKE', "%{$install}%")
-                ->orWhere('primary_domain', 'LIKE', "%{$install}%");
-        });
-
-        $items = $query->get();
+        $items = Install::matchQuery($install, $includeStaging, $includeInactive, $nameOnly)->get();
 
         foreach ($items as $item) {
             if (empty($item)) {

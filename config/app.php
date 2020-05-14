@@ -15,6 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'ssh_key' => env('SSH_KEY', "~/.ssh/id_rsa"),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

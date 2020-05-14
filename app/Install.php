@@ -20,6 +20,10 @@ class Install extends Model {
 
     protected $appends = ['url'];
 
+    public function getRepoDomainAttribute() {
+        return preg_replace("/^www\./", "", $this->primary_domain);
+    }
+
     public function getUrlAttribute() {
         return "https://my.wpengine.com/installs/{$this->name}";
     }
@@ -115,7 +119,7 @@ class Install extends Model {
         ]);
     }
 
-    public static function matchQuery(String $install, bool $includeStaging = false, bool $includeInactive = false, bool $nameOnly = false) {
+    public static function matchQuery(String $install = '', bool $includeStaging = false, bool $includeInactive = false, bool $nameOnly = false) {
         $query = Install::where(DB::raw('true'), true);
         if (!$includeStaging) {
             $query = $query->where('environment', 'production');
@@ -124,12 +128,26 @@ class Install extends Model {
             $query = $query->where('active', true);
         }
 
-        $query->where(function ($query) use ($install) {
-            $query
-                ->where('name', 'LIKE', "%{$install}%")
-                ->orWhere('primary_domain', 'LIKE', "%{$install}%");
-        });
+        if (!empty($install)) {
+            $query->where(function ($query) use ($install) {
+                $query
+                    ->where('name', 'LIKE', "%{$install}%")
+                    ->orWhere('primary_domain', 'LIKE', "%{$install}%");
+            });
+        }
 
         return $query;
+    }
+
+    public static function installsToUpdate() {
+        //TODO - debug
+        return Install::where('name', 'cnpe')->get();
+
+        return Install::where('environment', 'production')
+                            ->where('plugin_updates', true)
+                            ->where('primary_domain', 'not like', '%wpengine%')
+                            ->where('primary_domain', 'not like', '%viastaging%')
+                            ->orderBy('primary_domain')
+                            ->get();
     }
 }

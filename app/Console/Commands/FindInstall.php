@@ -68,22 +68,24 @@ class FindInstall extends Command {
                 ->orWhere('primary_domain', 'LIKE', "%{$install}%");
         });
 
-        $item = $query->first();
+        $items = $query->get();
 
-        if (empty($item)) {
-            $this->info("No matches found for {$install}");
-            return;
-        }
+        foreach ($items as $item) {
+            if (empty($item)) {
+                $this->info("No matches found for {$install}");
+                return;
+            }
 
-        if ($this->option('name-only')) {
-            echo $item->name;
-        } else if ($this->option('output') == 'pretty') {
-            $this->info("\nname:\t{$item->name}");
-            $this->info("domain:\t{$item->primary_domain}");
-            $this->info("environment:\t{$item->environment}");
-            $this->info("url:\t{$item->url}");
-        } else {
-            echo json_encode($item->toArray());
+            if ($this->option('name-only')) {
+                echo $item->name;
+            } else if ($this->option('output') == 'pretty') {
+                $this->info("\nname:\t{$item->name}");
+                $this->info("domain:\t{$item->primary_domain}");
+                $this->info("environment:\t{$item->environment}");
+                $this->info("url:\t{$item->url}");
+            } else {
+                echo json_encode($item->toArray());
+            }
         }
     }
 }

@@ -51,7 +51,13 @@ class InstallsPluginUpdate extends Command {
 			$installs = Install::installsToUpdate();
 		}
 
+		$installSkipList = ['chefedwardlee', 'benmarcum', 'customwigco'];
+
 		foreach ($installs as $install) {
+			if (in_array($install->name, $installSkipList)) {
+				continue;
+			}
+
 			$this->info("Queuing {$install->name} for update");
 
 			UpdateInstallPlugins::dispatch($install->id, $opts);

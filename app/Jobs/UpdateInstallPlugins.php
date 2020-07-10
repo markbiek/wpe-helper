@@ -126,7 +126,7 @@ class UpdateInstallPlugins implements ShouldQueue {
 		);
 		$plugins = json_decode($output);
 
-		$pluginBlacklist = [
+		$pluginSkipList = [
 			'/js_composer/i',
 			'/.*woo.*$/i', //woocommerce plugins
 			'/quick-pagepost-redirect-plugin/i',
@@ -143,7 +143,7 @@ class UpdateInstallPlugins implements ShouldQueue {
 		$pluginsSkipped = [];
 		foreach ($plugins as $plugin) {
 			$skip = false;
-			foreach ($pluginBlacklist as $pattern) {
+			foreach ($pluginSkipList as $pattern) {
 				if (preg_match($pattern, $plugin->name) > 0) {
 					$skip = true;
 					$pluginsSkipped[] = $plugin;

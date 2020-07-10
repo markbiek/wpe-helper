@@ -52,7 +52,7 @@ class InstallsPluginUpdate extends Command {
 		}
 
 		foreach ($installs as $install) {
-			$this->info($install->name);
+			$this->info("Queuing {$install->name} for update");
 
 			UpdateInstallPlugins::dispatch($install->id, $opts);
 		}

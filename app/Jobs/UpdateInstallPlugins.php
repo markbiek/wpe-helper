@@ -60,10 +60,14 @@ class UpdateInstallPlugins implements ShouldQueue {
 
 		$baseUrl = 'git@github.com:viastudio/%s.git';
 		$repoUrl = sprintf($baseUrl, $install->repo_domain);
-		Log::debug($repoUrl);
+		Log::debug("repo: $repoUrl");
 
-		$wcPath = "/tmp/{$install->name}";
-		(new Filesystem())->remove($wcPath);
+		try {
+			$wcPath = "/tmp/{$install->name}";
+			(new Filesystem())->remove($wcPath);
+		} catch (\Exception $e) {
+			Log::error("Error removing {$install->name}: " . $e->getMessage());
+		}
 
 		$max = 2;
 		$tries = 0;
@@ -101,6 +105,8 @@ class UpdateInstallPlugins implements ShouldQueue {
 
 		//We exceeded the number of tries to clone so we abort updating this site
 		if ($tries > $max) {
+			Log::debug("Unable to clone {$install->name}");
+			Log::debug($repoUrl);
 			Notify::send(new InstallCloneError($install));
 			return;
 		}

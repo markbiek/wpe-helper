@@ -53,8 +53,10 @@ class UpdateInstallPlugins implements ShouldQueue {
 
 		$git = new GitWrapper();
 		$git->setTimeout(600); //10 minutes
-		//TODO - disable this when we're done or make it an option?
-		$git->streamOutput();
+
+		if ($this->opts['git-output']) {
+			$git->streamOutput();
+		}
 
 		$baseUrl = 'git@github.com:viastudio/%s.git';
 		$repoUrl = sprintf($baseUrl, $install->repo_domain);

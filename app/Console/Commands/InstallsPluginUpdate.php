@@ -15,6 +15,8 @@ class InstallsPluginUpdate extends Command {
 	 * @var string
 	 */
 	protected $signature = 'installs:plugin-updates
+        {--install= : Only update the specified install}
+        {--git-output : Show detailed git output in logs and errors}
     ';
 
 	/**
@@ -39,12 +41,20 @@ class InstallsPluginUpdate extends Command {
 	 * @return mixed
 	 */
 	public function handle() {
-		$installs = Install::installsToUpdate();
+		$opts = [
+			'git-output' => $this->option('git-output'),
+		];
+
+		if (!empty($this->option('install'))) {
+			$installs = Install::where('name', $this->option('install'))->get();
+		} else {
+			$installs = Install::installsToUpdate();
+		}
 
 		foreach ($installs as $install) {
 			$this->info($install->name);
 
-			UpdateInstallPlugins::dispatch($install->id);
+			UpdateInstallPlugins::dispatch($install->id, $opts);
 		}
 	}
 }

@@ -145,9 +145,6 @@ class Install extends Model {
 	}
 
 	public static function installsToUpdate() {
-		//TODO - debug
-		return Install::where('name', 'cnpe')->get();
-
 		return Install::where('environment', 'production')
 			->where('plugin_updates', true)
 			->where('primary_domain', 'not like', '%wpengine%')

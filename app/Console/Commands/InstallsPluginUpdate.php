@@ -52,11 +52,28 @@ class InstallsPluginUpdate extends Command {
 		}
 
 		$installSkipList = [
-			'chefedwardlee',
 			'benmarcum',
+			'chefedwardlee',
 			'customwigco',
+			'guestlist',
+			'kpr',
+			'leadcolin',
+			'lpm01',
+			'lpmcampaign',
+			'lpmimpact',
+			'ovoinc',
+			'ovr',
+			'starbusiness',
 			'viastudio',
 			'viapress',
+			'wfpk',
+			'wpfl',
+			'wfplarchives',
+			'wfplatrisk',
+			'wfplenergy',
+			'wfplnextlou',
+			'wfplsick',
+			'wuol',
 		];
 
 		foreach ($installs as $install) {

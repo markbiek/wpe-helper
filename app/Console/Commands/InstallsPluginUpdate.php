@@ -51,7 +51,13 @@ class InstallsPluginUpdate extends Command {
 			$installs = Install::installsToUpdate();
 		}
 
-		$installSkipList = ['chefedwardlee', 'benmarcum', 'customwigco'];
+		$installSkipList = [
+			'chefedwardlee',
+			'benmarcum',
+			'customwigco',
+			'viastudio',
+			'viapress',
+		];
 
 		foreach ($installs as $install) {
 			if (in_array($install->name, $installSkipList)) {

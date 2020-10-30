@@ -67,7 +67,7 @@ class InstallsPluginUpdate extends Command {
 			'viastudio',
 			'viapress',
 			'wfpk',
-			'wpfl',
+			'wfpl',
 			'wfplarchives',
 			'wfplatrisk',
 			'wfplenergy',
@@ -81,9 +81,7 @@ class InstallsPluginUpdate extends Command {
 				continue;
 			}
 
-			$this->info("Queuing {$install->name} for update");
-
-			UpdateInstallPlugins::dispatch($install->id, $opts);
+			\App\Actions\UpdateInstallPlugins::execute($install, $opts);
 		}
 	}
 }

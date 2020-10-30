@@ -120,16 +120,38 @@ class UpdateInstallPlugins implements ShouldQueue {
 		$wc->checkoutNewBranch($branch);
 
 		$output = '';
-		$process = Proc::exec('npm install', $wcPath, $output);
-		$process = Proc::exec('grunt setup', $wcPath, $output);
+		// TODO - remove
+		//$process = Proc::exec('npm install', $wcPath, $output);
+		//$process = Proc::exec('grunt setup', $wcPath, $output);
 
 		$wc->reset(['hard' => true]);
 
-		$process = Proc::exec(
-			'wp plugin list --update=available --fields=name --format=json',
-			$wcPath,
-			$output,
-		);
+		// Get the list of plugins to update from the remote install
+		$remoteArgs = "--ssh={$install->name}@{$install->name}.ssh.wpengine.net";
+
+		$tries = 0;
+		$max = 10;
+		while (true) {
+			try {
+				$tries++;
+
+				$process = Proc::exec(
+					"wp plugin list --update=available --fields=name --format=json $remoteArgs",
+					$wcPath,
+					$output,
+				);
+
+				break;
+			} catch (\Exception $e) {
+				if ($tries >= $max) {
+					Log:
+					error(
+						"Couldn't get plugin list for {$install->name} after $tries attempts",
+					);
+					throw $e;
+				}
+			}
+		}
 		$plugins = json_decode($output);
 
 		$pluginSkipList = [
@@ -167,7 +189,7 @@ class UpdateInstallPlugins implements ShouldQueue {
 			try {
 				Log::debug("{$install->name}: Updating {$plugin->name}");
 				$process = Proc::exec(
-					"wp plugin update {$plugin->name}",
+					"wp plugin update {$plugin->name} $remoteArgs",
 					$wcPath,
 					$output,
 				);
@@ -175,12 +197,14 @@ class UpdateInstallPlugins implements ShouldQueue {
 				$pluginPath = "$wcPath/wp-content/plugins/{$plugin->name}";
 				Log::debug($pluginPath);
 
+				/*
 				$wc->add($pluginPath);
 				$wc->commit($pluginPath, [
 					'no-verify' => true,
 					'm' => "Plugin update: {$plugin->name}",
 				]);
-				$wc->push('origin', $branch);
+                $wc->push('origin', $branch);
+                */
 
 				$pluginsUpdated[] = $plugin;
 			} catch (\Exception $e) {
@@ -193,10 +217,29 @@ class UpdateInstallPlugins implements ShouldQueue {
 		Log::debug($pluginsUpdated);
 		Log::debug($pluginsSkipped);
 
+		// No plugins were updated
 		if (count($pluginsUpdated) <= 0) {
 			Notify::send(new InstallNoUpdates($install));
 			return;
 		}
+
+		// rsync files from production
+		Log::debug('Syncing files from production');
+		$process = Proc::exec(
+			"rsync -avzu -e ssh {$install->name}@{$install->name}.ssh.wpengine.net:\"~/sites/{$install->name}/wp-content/plugins\" ./wp-content",
+			$wcPath,
+			$output,
+		);
+		Log::debug($wcPath);
+		Log::debug($output);
+
+		// Commit to Github and PR
+		$wc->add($wcPath);
+		$wc->commit($wcPath, [
+			'no-verify' => true,
+			'm' => 'Plugin updates',
+		]);
+		$wc->push('origin', $branch);
 
 		try {
 			$prCreated = false;
@@ -223,42 +266,6 @@ class UpdateInstallPlugins implements ShouldQueue {
 
 			Log::error('PR error: ' . $e->getMessage());
 			Notify::send(new InstallPrError($install, $e->getMessage()));
-		}
-
-		if ($prCreated) {
-			try {
-				//Push to WPE
-				$wc->remote(
-					'add',
-					'production',
-					"git@git.wpengine.com:production/{$install->name}.git",
-				);
-				Proc::exec(['git', 'clean', '-d', '-fx'], $wcPath);
-				Proc::exec(
-					[
-						'git',
-						'pull',
-						'-X',
-						'theirs',
-						'--no-edit',
-						'production',
-						'master',
-					],
-					$wcPath,
-				);
-				$wc->push('production', 'master', [
-					'force' => true,
-					'no-verify' => true,
-				]);
-				Log::debug('Finished deploying to production');
-			} catch (\Exception $e) {
-				Log::error('Production push error: ' . $e->getMessage());
-				Notify::send(
-					new InstallDeployError($install, $e->getMessage()),
-				);
-			}
-		} else {
-			Log::debug('Skipping production deploy because there was no PR');
 		}
 
 		try {

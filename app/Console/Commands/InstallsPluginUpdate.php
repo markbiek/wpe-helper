@@ -81,7 +81,11 @@ class InstallsPluginUpdate extends Command {
 				continue;
 			}
 
-			\App\Actions\UpdateInstallPlugins::execute($install, $opts);
+			try {
+				\App\Actions\UpdateInstallPlugins::execute($install, $opts);
+			} catch (\Exception $e) {
+				// TODO
+			}
 		}
 	}
 }

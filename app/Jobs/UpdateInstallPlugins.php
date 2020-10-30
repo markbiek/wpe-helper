@@ -144,8 +144,7 @@ class UpdateInstallPlugins implements ShouldQueue {
 				break;
 			} catch (\Exception $e) {
 				if ($tries >= $max) {
-					Log:
-					error(
+					Log::error(
 						"Couldn't get plugin list for {$install->name} after $tries attempts",
 					);
 					throw $e;

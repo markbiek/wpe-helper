@@ -29,6 +29,8 @@ class UpdateInstallPlugins implements ShouldQueue {
 	const GIT_USERNAME = 'viabot';
 	const GIT_EMAIL = 'dev@viastudio.com';
 
+	public $timout = 600;
+
 	protected $installId;
 	protected $opts;
 

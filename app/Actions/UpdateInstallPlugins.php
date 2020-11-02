@@ -25,6 +25,7 @@ class UpdateInstallPlugins {
 	public static function execute(Install $install, array $opts) {
 		Log::debug("UpdateInstallPlugins: {$install->name}");
 
+		// Initalize git stuff
 		$git = new GitWrapper();
 		$git->setTimeout(600); //10 minutes
 
@@ -36,6 +37,7 @@ class UpdateInstallPlugins {
 		$repoUrl = sprintf($baseUrl, $install->repo_domain);
 		Log::debug("repo: $repoUrl");
 
+		// Remove the existing working copy
 		try {
 			$wcPath = "/tmp/{$install->name}";
 			(new Filesystem())->remove($wcPath);
@@ -43,6 +45,40 @@ class UpdateInstallPlugins {
 			Log::error("Error removing {$install->name}: " . $e->getMessage());
 		}
 
+		// First get a list of plugins that need updates
+		$plugins = self::getUpdateablePlugins($install);
+
+		// No plugins needed updating so we can stop processing this install
+		if (count($plugins) <= 0) {
+			Log::debug("{$install->name} did not have any plugins to update");
+			Notify::send(new InstallNoUpdates($install));
+			return;
+		}
+
+		// Go through and update all remote plugins
+		$remoteArgs = "--ssh={$install->name}@{$install->name}.ssh.wpengine.net";
+		$pluginsUpdated = [];
+		foreach ($plugins as $plugin) {
+			try {
+				Log::debug("{$install->name}: Updating {$plugin->name}");
+				$process = Proc::exec(
+					"wp plugin update {$plugin->name} $remoteArgs",
+					__DIR__,
+					$output,
+				);
+
+				$pluginsUpdated[] = $plugin;
+			} catch (\Exception $e) {
+				Log::error('PluginUpdateError: ' . $e->getMessage());
+				Notify::send(new PluginUpdateError($plugin, $e->getMessage()));
+				return;
+			}
+		}
+
+		Log::debug('Finished updating plugins');
+		Log::debug($pluginsUpdated);
+
+		// Once we've finished updating the plugins, we need to clone the repo and sync down the changes
 		$max = 2;
 		$tries = 0;
 		while (true) {
@@ -85,7 +121,7 @@ class UpdateInstallPlugins {
 			return;
 		}
 
-		// Start updating plugins
+		// Create a new branch for the plugin updates
 		$today = new \DateTime();
 		$tstamp = $today->format('Y-m-d-H-i-s');
 		$branch = "auto-plugin-updates-{$tstamp}";
@@ -94,98 +130,8 @@ class UpdateInstallPlugins {
 		$wc->checkoutNewBranch($branch);
 
 		$output = '';
-		// TODO - remove
-		//$process = Proc::exec('npm install', $wcPath, $output);
-		//$process = Proc::exec('grunt setup', $wcPath, $output);
 
 		$wc->reset(['hard' => true]);
-
-		// Get the list of plugins to update from the remote install
-		$remoteArgs = "--ssh={$install->name}@{$install->name}.ssh.wpengine.net";
-
-		$tries = 0;
-		$max = 10;
-		while (true) {
-			try {
-				$tries++;
-
-				$process = Proc::exec(
-					"wp plugin list --update=available --fields=name --format=json $remoteArgs",
-					$wcPath,
-					$output,
-				);
-
-				break;
-			} catch (\Exception $e) {
-				if ($tries >= $max) {
-					Log::error(
-						"Couldn't get plugin list for {$install->name} after $tries attempts",
-					);
-					throw $e;
-				}
-			}
-		}
-		$plugins = json_decode($output);
-
-		$pluginSkipList = [
-			'/js_composer/i',
-			'/.*woo.*$/i', //woocommerce plugins
-			'/quick-pagepost-redirect-plugin/i',
-			'/gravityformshighrise/i',
-			'/the-events-calendar/i',
-			'/events-calendar-pro/i',
-			'/healcode-mindbody-widget/i',
-			'/elegantbuilder/i',
-			'/keyring/i',
-			'/event-list/i',
-			'/wp-e-commerce/i',
-		];
-		$pluginsUpdated = [];
-		$pluginsSkipped = [];
-		foreach ($plugins as $plugin) {
-			$skip = false;
-			foreach ($pluginSkipList as $pattern) {
-				if (preg_match($pattern, $plugin->name) > 0) {
-					$skip = true;
-					$pluginsSkipped[] = $plugin;
-					break;
-				}
-			}
-
-			if ($skip) {
-				Log::info(
-					"{$install->name}: Skipping {$plugin->name} because it was blacklisted",
-				);
-				continue;
-			}
-
-			try {
-				Log::debug("{$install->name}: Updating {$plugin->name}");
-				$process = Proc::exec(
-					"wp plugin update {$plugin->name} $remoteArgs",
-					$wcPath,
-					$output,
-				);
-
-				$pluginPath = "$wcPath/wp-content/plugins/{$plugin->name}";
-				Log::debug($pluginPath);
-
-				$pluginsUpdated[] = $plugin;
-			} catch (\Exception $e) {
-				Notify::send(new PluginUpdateError($e->getMessage()));
-				return;
-			}
-		}
-
-		Log::debug('Finished updating plugins');
-		Log::debug($pluginsUpdated);
-		Log::debug($pluginsSkipped);
-
-		// No plugins were updated
-		if (count($pluginsUpdated) <= 0) {
-			Notify::send(new InstallNoUpdates($install));
-			return;
-		}
 
 		// rsync files from production
 		Log::debug('Syncing files from production');
@@ -244,5 +190,82 @@ class UpdateInstallPlugins {
 		Notify::send(
 			new InstallUpdateReport($install, $pluginsUpdated, $pluginsSkipped),
 		);
+	}
+
+	protected static function getUpdateablePlugins(Install $install): array {
+		$remoteArgs = "--ssh={$install->name}@{$install->name}.ssh.wpengine.net";
+
+		$output = '';
+		$tries = 0;
+		$max = 10;
+		while (true) {
+			try {
+				$tries++;
+
+				$process = Proc::exec(
+					"wp plugin list --update=available --fields=name --format=json $remoteArgs",
+					__DIR__,
+					$output,
+				);
+
+				Log::debug("output=($output)");
+
+				break;
+			} catch (\Exception $e) {
+				if ($tries >= $max) {
+					Log::error(
+						"Couldn't get plugin list for {$install->name} after $tries attempts",
+					);
+					Log::error($e->getMessage());
+					Log::error($output);
+					throw $e;
+				}
+			}
+		}
+		$plugins = json_decode($output);
+		if (!$plugins) {
+			$plugins = [];
+		}
+
+		$pluginSkipList = self::getPluginSkipList();
+		$pluginsToUpdate = [];
+		$pluginsSkipped = [];
+		foreach ($plugins as $plugin) {
+			$skip = false;
+			foreach ($pluginSkipList as $pattern) {
+				if (preg_match($pattern, $plugin->name) > 0) {
+					$skip = true;
+					$pluginsSkipped[] = $plugin;
+					break;
+				}
+			}
+
+			if ($skip) {
+				Log::info(
+					"{$install->name}: Skipping {$plugin->name} because it was blacklisted",
+				);
+				continue;
+			}
+
+			$pluginsToUpdate[] = $plugin;
+		}
+
+		return $pluginsToUpdate;
+	}
+
+	protected static function getPluginSkipList(): array {
+		return [
+			'/js_composer/i',
+			'/.*woo.*$/i', //woocommerce plugins
+			'/quick-pagepost-redirect-plugin/i',
+			'/gravityformshighrise/i',
+			'/the-events-calendar/i',
+			'/events-calendar-pro/i',
+			'/healcode-mindbody-widget/i',
+			'/elegantbuilder/i',
+			'/keyring/i',
+			'/event-list/i',
+			'/wp-e-commerce/i',
+		];
 	}
 }

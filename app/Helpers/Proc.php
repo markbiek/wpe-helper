@@ -12,12 +12,14 @@ class Proc {
 			$cmd = explode(' ', $cmd);
 		}
 		Log::debug($cmd);
+		Log::debug($cwd);
 		$process = new Process($cmd, $cwd);
 		$process->setTimeout($timeout);
 
 		try {
 			$process->mustRun();
 		} catch (ProcessFailedException $e) {
+			Log::error('Process failed: ' . $e->getMessage());
 			throw $e;
 		}
 

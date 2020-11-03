@@ -266,6 +266,7 @@ class UpdateInstallPlugins {
 			'/keyring/i',
 			'/event-list/i',
 			'/wp-e-commerce/i',
+			'/advanced-custom-fields-pro/',
 		];
 	}
 }

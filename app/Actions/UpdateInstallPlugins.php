@@ -81,13 +81,13 @@ class UpdateInstallPlugins {
 		// Once we've finished updating the plugins, we need to clone the repo and sync down the changes
 		$max = 2;
 		$tries = 0;
+		$reason = '';
 		while (true) {
 			try {
 				$tries++;
 				if ($tries > $max) {
-					Log::error(
-						"{$install->name} exceeded number of clone retries",
-					);
+					$reason = 'exceeded number of clone retries';
+					Log::error("{$install->name} $reason");
 					break;
 				}
 
@@ -109,6 +109,7 @@ class UpdateInstallPlugins {
 					Log::error(
 						"Error cloning {$install->name}: " . $e->getMessage(),
 					);
+					$reason = $e->getMessage();
 				}
 			}
 		}
@@ -117,7 +118,7 @@ class UpdateInstallPlugins {
 		if ($tries > $max) {
 			Log::debug("Unable to clone {$install->name}");
 			Log::debug($repoUrl);
-			Notify::send(new InstallCloneError($install));
+			Notify::send(new InstallCloneError($install, $reason));
 			return;
 		}
 

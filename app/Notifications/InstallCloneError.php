@@ -11,14 +11,22 @@ use App\Install;
 
 class InstallCloneError extends Notification {
 	public $install;
+	public $reason;
+	public $repoUrl;
 
 	/**
 	 * Create a new notification instance.
 	 *
 	 * @return void
 	 */
-	public function __construct(Install $install) {
+	public function __construct(
+		Install $install,
+		string $reason,
+		string $repoUrl
+	) {
 		$this->install = $install;
+		$this->reason = $reason;
+		$this->repoUrl = $repoUrl;
 	}
 
 	/**
@@ -34,6 +42,8 @@ class InstallCloneError extends Notification {
 	public function toSlack($notifiable) {
 		return (new SlackMessage())
 			->error()
-			->content("Unable to clone repo for {$this->install->name}");
+			->content(
+				"Unable to clone repo for {$this->install->name}: {$this->reason}\n({$this->repoUrl})",
+			);
 	}
 }

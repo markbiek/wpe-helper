@@ -6,8 +6,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Database\Eloquent\Model;
 
+use App\PluginUpdate;
+
 class Install extends Model {
 	protected $primaryKey = 'wpe_id';
+	protected $keyType = 'string';
 
 	protected $fillable = [
 		'wpe_id',
@@ -19,6 +22,10 @@ class Install extends Model {
 	];
 
 	protected $appends = ['url'];
+
+	public function plugin_update() {
+		return $this->hasOne('App\PluginUpdate');
+	}
 
 	public function getRepoDomainAttribute() {
 		return preg_replace('/^www\./', '', $this->primary_domain);
@@ -64,6 +71,16 @@ class Install extends Model {
 		);
 
 		return $dbPass;
+	}
+
+	public function addPluginUpdate(): PluginUpdate {
+		if (!empty($this->plugin_update)) {
+			return $this->plugin_update;
+		}
+
+		return PluginUpdate::create([
+			'install_wpe_id' => $this->wpe_id,
+		]);
 	}
 
 	public function copyDatabase($dest) {
@@ -149,7 +166,7 @@ class Install extends Model {
 			->where('plugin_updates', true)
 			->where('primary_domain', 'not like', '%wpengine%')
 			->where('primary_domain', 'not like', '%viastaging%')
-			->orderBy('primary_domain')
+			->orderBy('name')
 			->get();
 	}
 }

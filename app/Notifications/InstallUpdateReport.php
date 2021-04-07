@@ -4,7 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\SlackMessage;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 use App\Install;
@@ -36,29 +36,21 @@ class InstallUpdateReport extends Notification {
 	 * @return array
 	 */
 	public function via($notifiable) {
-		return ['slack'];
+		return ['mail'];
 	}
 
-	public function toSlack($notifiable) {
+	public function toMail($notifiable) {
 		$pluginsUpdated = $this->pluginsUpdated;
 		$pluginsSkipped = $this->pluginsSkipped;
 
-		return (new SlackMessage())
-			->error()
-			->content("Plugin update report for: {$this->install->name}")
-			->attachment(function ($attachment) use ($pluginsUpdated) {
-				$content = '';
-				foreach ($pluginsUpdated as $plugin) {
-					$content .= "* {$plugin->name}\n";
-				}
-				$attachment->title('Updated:')->content($content);
-			})
-			->attachment(function ($attachment) use ($pluginsSkipped) {
-				$content = '';
-				foreach ($pluginsSkipped as $plugin) {
-					$content .= "* {$plugin->name}\n";
-				}
-				$attachment->title('Skipped:')->content($content);
-			});
+		return (new MailMessage())
+			->subject(
+				"WPE Plugin Updates: Update report for {$this->install->name}",
+			)
+			->markdown('mail.plugin-updates.update-report', [
+				'install' => $this->install,
+				'updated' => $pluginsUpdated,
+				'skipped' => $pluginsSkipped,
+			]);
 	}
 }

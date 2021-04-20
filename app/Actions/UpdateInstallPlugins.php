@@ -10,47 +10,79 @@ use GitWrapper\Exception\GitException;
 use App\Helpers\Proc;
 use App\Helpers\Notify;
 use App\Notifications\PluginUpdateError;
-use App\Notifications\InstallCloneError;
-use App\Notifications\InstallPrError;
-use App\Notifications\InstallDeployError;
-use App\Notifications\InstallTagError;
 use App\Notifications\InstallUpdateReport;
 use App\Notifications\InstallNoUpdates;
-use App\Install;
+use App\{Install, PluginUpdate};
 
 class UpdateInstallPlugins {
 	const GIT_USERNAME = 'viabot';
 	const GIT_EMAIL = 'dev@viastudio.com';
 
-	public static function execute(Install $install, array $opts) {
-		Log::debug("UpdateInstallPlugins: {$install->name}");
+	public static function info(
+		string $msg,
+		array $data = [],
+		\Illuminate\Console\Command $cmd = null
+	) {
+		Log::channel('plugins')->info($msg, $data);
 
-		// Initalize git stuff
-		$git = new GitWrapper();
-		$git->setTimeout(600); //10 minutes
-
-		if ($opts['git-output']) {
-			$git->streamOutput();
+		if (!empty($cmd)) {
+			$cmd->info($msg);
 		}
+	}
 
-		$baseUrl = 'git@github.com:viastudio/%s.git';
-		$repoUrl = sprintf($baseUrl, $install->repo_domain);
-		Log::debug("repo: $repoUrl");
+	public static function error(
+		string $msg,
+		array $data = [],
+		\Illuminate\Console\Command $cmd = null
+	) {
+		Log::channel('plugins')->error($msg, $data);
 
-		// Remove the existing working copy
-		try {
-			$wcPath = "/tmp/{$install->name}";
-			(new Filesystem())->remove($wcPath);
-		} catch (\Exception $e) {
-			Log::error("Error removing {$install->name}: " . $e->getMessage());
+		if (!empty($cmd)) {
+			$cmd->error($msg);
+		}
+	}
+
+	public static function debug(
+		string $msg,
+		array $data = [],
+		\Illuminate\Console\Command $cmd = null
+	) {
+		Log::channel('plugins')->debug($msg, $data);
+
+		if (!empty($cmd)) {
+			$cmd->line($msg);
+		}
+	}
+
+	public static function execute(
+		Install $install,
+		\Illuminate\Console\Command $cmd
+	) {
+		self::info("Updating {$install->name} plugins");
+
+		// Make sure the plugin update entry exists
+		$install->addPluginUpdate();
+		$install->refresh();
+
+		if (
+			!$cmd->option('force') &&
+			$install->plugin_update->recently_updated === true
+		) {
+			self::info(
+				"{$install->name} was skipped because it was updated recently. Use --force to override",
+			);
+
+			return;
 		}
 
 		// First get a list of plugins that need updates
-		$plugins = self::getUpdateablePlugins($install);
+		[$plugins, $pluginsSkipped] = self::getUpdateablePlugins($install);
 
 		// No plugins needed updating so we can stop processing this install
 		if (count($plugins) <= 0) {
-			Log::debug("{$install->name} did not have any plugins to update");
+			$install->plugin_update->setSuccess();
+
+			self::info("{$install->name} did not have any plugins to update");
 			Notify::send(new InstallNoUpdates($install));
 			return;
 		}
@@ -60,7 +92,7 @@ class UpdateInstallPlugins {
 		$pluginsUpdated = [];
 		foreach ($plugins as $plugin) {
 			try {
-				Log::debug("{$install->name}: Updating {$plugin->name}");
+				self::info("{$install->name}: Updating {$plugin->name}");
 				$process = Proc::exec(
 					"wp plugin update {$plugin->name} $remoteArgs",
 					__DIR__,
@@ -69,124 +101,21 @@ class UpdateInstallPlugins {
 
 				$pluginsUpdated[] = $plugin;
 			} catch (\Exception $e) {
-				Log::error('PluginUpdateError: ' . $e->getMessage());
-				Notify::send(new PluginUpdateError($plugin, $e->getMessage()));
+				$install->plugin_update->setFailed();
+
+				self::error('PluginUpdateError: ' . $e->getMessage());
+				Notify::send(
+					new PluginUpdateError($install, $plugin, $e->getMessage()),
+				);
 				return;
 			}
 		}
 
-		Log::debug('Finished updating plugins');
-		Log::debug($pluginsUpdated);
-
-		// Once we've finished updating the plugins, we need to clone the repo and sync down the changes
-		$max = 2;
-		$tries = 0;
-		$reason = '';
-		while (true) {
-			try {
-				$tries++;
-				if ($tries > $max) {
-					$reason = 'exceeded number of clone retries';
-					Log::error("{$install->name} $reason");
-					break;
-				}
-
-				$wc = $git->cloneRepository($repoUrl, $wcPath);
-
-				$wc->config('user.name', static::GIT_USERNAME);
-				$wc->config('user.email', static::GIT_EMAIL);
-				break;
-			} catch (GitException $e) {
-				if (stripos($e->getMessage(), 'not found')) {
-					//Repo wasn't found, try stripping off any subdomains
-					$domain = preg_replace(
-						'/^(.*?)\./',
-						'',
-						$install->primary_domain,
-					);
-					$repoUrl = sprintf($baseUrl, $domain);
-				} else {
-					Log::error(
-						"Error cloning {$install->name}: " . $e->getMessage(),
-					);
-					$reason = $e->getMessage();
-				}
-			}
-		}
-
-		//We exceeded the number of tries to clone so we abort updating this site
-		if ($tries > $max) {
-			Log::debug("Unable to clone {$install->name}");
-			Log::debug($repoUrl);
-			Notify::send(new InstallCloneError($install, $reason));
-			return;
-		}
-
-		// Create a new branch for the plugin updates
-		$today = new \DateTime();
-		$tstamp = $today->format('Y-m-d-H-i-s');
-		$branch = "auto-plugin-updates-{$tstamp}";
-		$tagName = 'plugin-updates-' . $today->format('Y-m-d-H-i-s');
-
-		$wc->checkoutNewBranch($branch);
-
-		$output = '';
-
-		$wc->reset(['hard' => true]);
-
-		// rsync files from production
-		Log::debug('Syncing files from production');
-		$process = Proc::exec(
-			"rsync -avzu -e ssh {$install->name}@{$install->name}.ssh.wpengine.net:\"~/sites/{$install->name}/wp-content/plugins\" ./wp-content",
-			$wcPath,
-			$output,
-		);
-		Log::debug($wcPath);
-		Log::debug($output);
-
-		// Commit to Github and PR
-		$wc->add($wcPath);
-		$wc->commit($wcPath, [
-			'no-verify' => true,
-			'm' => 'Plugin updates',
+		self::info('Finished updating plugins', [
+			'plugins' => $pluginsUpdated,
 		]);
-		$wc->push('origin', $branch);
 
-		try {
-			$prCreated = false;
-			// PR and merge
-			$process = Proc::exec(
-				[
-					'gh',
-					'pr',
-					'create',
-					'--title',
-					'Automated plugin updates',
-					'--body',
-					'Automated plugin updates',
-				],
-				$wcPath,
-			);
-
-			sleep(30); // Give the PR time to finish setting up
-			$process = Proc::exec(['gh', 'pr', 'merge', '--merge'], $wcPath);
-			$prCreated = true;
-			Log::debug('Finished creating PR');
-		} catch (\Exception $e) {
-			$msg = $e->getMessage();
-
-			Log::error('PR error: ' . $e->getMessage());
-			Notify::send(new InstallPrError($install, $e->getMessage()));
-		}
-
-		try {
-			//Tag change
-			$wc->tag($tagName);
-			$wc->pushTag($tagName);
-		} catch (\Exception $e) {
-			Log::error('Tag error: ' . $e->getMessage());
-			Notify::send(new InstallTagError($install, $e->getMessage()));
-		}
+		$install->plugin_update->setSuccess();
 
 		Notify::send(
 			new InstallUpdateReport($install, $pluginsUpdated, $pluginsSkipped),
@@ -204,21 +133,24 @@ class UpdateInstallPlugins {
 				$tries++;
 
 				$process = Proc::exec(
-					"wp plugin list --update=available --fields=name --format=json $remoteArgs",
+					"wp plugin list --update=available --status=active --fields=name --format=json $remoteArgs",
 					__DIR__,
 					$output,
 				);
 
-				Log::debug("output=($output)");
+				self::debug("output=($output)");
 
 				break;
 			} catch (\Exception $e) {
 				if ($tries >= $max) {
-					Log::error(
+					self::error(
 						"Couldn't get plugin list for {$install->name} after $tries attempts",
+						[
+							'err' => $e->getMessage(),
+							'output' => $output,
+						],
 					);
-					Log::error($e->getMessage());
-					Log::error($output);
+
 					throw $e;
 				}
 			}
@@ -242,7 +174,7 @@ class UpdateInstallPlugins {
 			}
 
 			if ($skip) {
-				Log::info(
+				self::info(
 					"{$install->name}: Skipping {$plugin->name} because it was blacklisted",
 				);
 				continue;
@@ -251,7 +183,7 @@ class UpdateInstallPlugins {
 			$pluginsToUpdate[] = $plugin;
 		}
 
-		return $pluginsToUpdate;
+		return [$pluginsToUpdate, $pluginsSkipped];
 	}
 
 	protected static function getPluginSkipList(): array {

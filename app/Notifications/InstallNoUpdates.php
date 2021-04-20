@@ -4,7 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\SlackMessage;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 use App\Install;
@@ -28,14 +28,14 @@ class InstallNoUpdates extends Notification {
 	 * @return array
 	 */
 	public function via($notifiable) {
-		return ['slack'];
+		return ['mail'];
 	}
 
-	public function toSlack($notifiable) {
-		return (new SlackMessage())
-			->error()
-			->content(
-				"{$this->install->name} did not require any plugin updates",
-			);
+	public function toMail($notifiable) {
+		$msg = "{$this->install->name} did not require any plugin updates";
+
+		return (new MailMessage())
+			->subject("WPE Plugin Updates: $msg")
+			->line($msg);
 	}
 }

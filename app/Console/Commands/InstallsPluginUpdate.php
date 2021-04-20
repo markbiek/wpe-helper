@@ -16,7 +16,7 @@ class InstallsPluginUpdate extends Command {
 	 */
 	protected $signature = 'installs:plugin-updates
         {--install= : Only update the specified install}
-        {--git-output : Show detailed git output in logs and errors}
+		{--force : Run the update, even if an install was recently updated.}
     ';
 
 	/**
@@ -41,10 +41,6 @@ class InstallsPluginUpdate extends Command {
 	 * @return mixed
 	 */
 	public function handle() {
-		$opts = [
-			'git-output' => $this->option('git-output'),
-		];
-
 		if (!empty($this->option('install'))) {
 			$installs = Install::where('name', $this->option('install'))->get();
 		} else {
@@ -82,9 +78,17 @@ class InstallsPluginUpdate extends Command {
 			}
 
 			try {
-				\App\Actions\UpdateInstallPlugins::execute($install, $opts);
+				\App\Actions\UpdateInstallPlugins::execute($install, $this);
 			} catch (\Exception $e) {
-				// TODO
+				$this->error(
+					"Error updating install {$install->name}: " .
+						$e->getMessage(),
+				);
+
+				Log::channel('plugins')->error('Error updating install', [
+					'install' => $install,
+					'error' => $e->getMessage(),
+				]);
 			}
 		}
 	}

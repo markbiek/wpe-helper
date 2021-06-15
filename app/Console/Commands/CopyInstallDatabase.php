@@ -24,7 +24,7 @@ class CopyInstallDatabase extends Command {
 	 *
 	 * @var string
 	 */
-	protected $description = 'Command description';
+	protected $description = 'Copy an install database to a different environment';
 
 	/**
 	 * Create a new command instance.

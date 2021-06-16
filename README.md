@@ -51,7 +51,7 @@ You can find the command and connect in one step likes so:
 `wpeh installs:ssh myinstall`
 ```
 
-### `installs:dumb-db`
+### `installs:dump-db`
 
 Dump the contents of an install database. Output is sent to STDOUT and is gzipped by default. You can use `--raw` to get an uncompressed dump.
 

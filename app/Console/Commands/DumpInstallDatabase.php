@@ -17,6 +17,7 @@ class DumpInstallDatabase extends Command {
         {install : The install name to copy}
         {--staging : Include staging installs}
         {--raw : Dump the database uncompressed. Output is gzipped by default}
+		{--ssh-key= : The ssh key to use for connections}
     ';
 
 	/**
@@ -41,8 +42,19 @@ class DumpInstallDatabase extends Command {
 	 * @return mixed
 	 */
 	public function handle() {
+		$defaultKey = getenv('HOME') . '/.ssh/id_rsa';
+
+		if ($this->option('ssh-key')) {
+			$sshKey = $this->option('ssh-key');
+		} elseif (file_exists($defaultKey)) {
+			$sshKey = $defaultKey;
+		} else {
+			$this->error('Could not locate a valid ssh key to connect with.');
+			return 1;
+		}
+
 		//This is so we can automatically use the SSH key in other places
-		Config::set('app.ssh_key', $this->option('ssh-key'));
+		Config::set('app.ssh_key', $sshKey);
 
 		$install = Install::matchQuery(
 			$this->argument('install'),

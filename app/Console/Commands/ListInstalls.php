@@ -47,16 +47,11 @@ class ListInstalls extends Command {
 			$this->call('installs:cache');
 		}
 
-		$includeStaging = $this->option('staging');
-		$includeInactive = $this->option('inactive');
-		$nameOnly = $this->option('name-only');
-
-		$items = Install::matchQuery(
-			'',
-			$includeStaging,
-			$includeInactive,
-			$nameOnly,
-		)->get();
+		$items = Install::matchQuery('', [
+			'includeStaging' => $this->option('staging'),
+			'includeInactive' => $this->option('inactive'),
+			'nameOnly' => $this->option('name-only'),
+		])->get();
 
 		foreach ($items as $item) {
 			if (empty($item)) {

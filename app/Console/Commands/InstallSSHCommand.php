@@ -40,9 +40,10 @@ class InstallSSHCommand extends Command {
 	 */
 	public function handle() {
 		$install = $this->argument('install');
-		$includeStaging = $this->option('staging');
 
-		$items = Install::matchQuery($install, $includeStaging)->get();
+		$items = Install::matchQuery($install, [
+			'includeStaging' => $this->option('staging'),
+		])->get();
 
 		if (count($items) <= 0) {
 			$this->info("No matches found for {$install}");

@@ -20,7 +20,7 @@ class CacheInstalls extends Command {
 	 *
 	 * @var string
 	 */
-	protected $description = 'Command description';
+	protected $description = 'Cache list of installs from WPE';
 
 	/**
 	 * Create a new command instance.

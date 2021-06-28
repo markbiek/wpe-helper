@@ -49,16 +49,12 @@ class FindInstall extends Command {
 		}
 
 		$install = $this->argument('install');
-		$includeStaging = $this->option('staging');
-		$includeInactive = $this->option('inactive');
-		$nameOnly = $this->option('name-only');
 
-		$items = Install::matchQuery(
-			$install,
-			$includeStaging,
-			$includeInactive,
-			$nameOnly,
-		)->get();
+		$items = Install::matchQuery($install, [
+			'includeStaging' => $this->option('staging'),
+			'includeInactive' => $this->option('inactive'),
+			'nameOnly' => $this->option('name-only'),
+		])->get();
 
 		foreach ($items as $item) {
 			if (empty($item)) {

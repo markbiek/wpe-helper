@@ -56,12 +56,11 @@ class DumpInstallDatabase extends Command {
 		//This is so we can automatically use the SSH key in other places
 		Config::set('app.ssh_key', $sshKey);
 
-		$install = Install::matchQuery(
-			$this->argument('install'),
-			$this->option('staging'),
-			false,
-			true,
-		)->first();
+		$install = Install::matchQuery($this->argument('install'), [
+			'includeStaging' => $this->option('staging'),
+			'includeInactive' => false,
+			'nameOnly' => true,
+		])->first();
 		if (empty($install)) {
 			$this->error('That install could not be found');
 			return;

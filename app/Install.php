@@ -145,19 +145,35 @@ class Install extends Model {
 		]);
 	}
 
-	public static function matchQuery(
-		string $install = '',
-		bool $includeStaging = false,
-		bool $includeInactive = false,
-		bool $nameOnly = false
-	) {
+	public static function matchQuery(string $install = '', array $opts = []) {
+		$defaultOpts = [
+			'includeDev' => false,
+			'includeStaging' => false,
+			'includeInactive' => false,
+			'nameOnly' => false,
+		];
+
+		extract(array_merge($defaultOpts, $opts));
+
 		$query = Install::where(DB::raw('true'), true);
-		if (!$includeStaging) {
-			$query = $query->where('environment', 'production');
-		}
-		if (!$includeInactive) {
+
+		if ($includeInactive) {
 			$query = $query->where('active', true);
+			echo 'Including inactive installs';
 		}
+
+		$query->where(function ($query) use ($includeDev, $includeStaging) {
+			// Always include production installs
+			$query = $query->where('environment', 'production');
+
+			// Optionally include dev/staging installs
+			if ($includeDev) {
+				$query = $query->orWhere('environment', 'development');
+			}
+			if ($includeStaging) {
+				$query = $query->orWhere('environment', 'staging');
+			}
+		});
 
 		if (!empty($install)) {
 			$query->where(function ($query) use ($install) {

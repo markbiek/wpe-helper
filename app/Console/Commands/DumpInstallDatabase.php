@@ -15,6 +15,7 @@ class DumpInstallDatabase extends Command {
 	 */
 	protected $signature = 'installs:dump-db
         {install : The install name to copy}
+        {--development : Include development installs}
         {--staging : Include staging installs}
         {--raw : Dump the database uncompressed. Output is gzipped by default}
 		{--ssh-key= : The ssh key to use for connections}
@@ -57,6 +58,7 @@ class DumpInstallDatabase extends Command {
 		Config::set('app.ssh_key', $sshKey);
 
 		$install = Install::matchQuery($this->argument('install'), [
+			'includeDev' => $this->option('development'),
 			'includeStaging' => $this->option('staging'),
 			'includeInactive' => false,
 			'nameOnly' => true,

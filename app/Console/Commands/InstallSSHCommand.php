@@ -15,6 +15,7 @@ class InstallSSHCommand extends Command {
 	protected $signature = 'installs:ssh
         {install : The install to locate}
         {--staging : Include staging installs}
+        {--development : Include development installs}
     ';
 
 	/**
@@ -42,6 +43,7 @@ class InstallSSHCommand extends Command {
 		$install = $this->argument('install');
 
 		$items = Install::matchQuery($install, [
+			'includeDev' => $this->option('development'),
 			'includeStaging' => $this->option('staging'),
 		])->get();
 
@@ -50,8 +52,10 @@ class InstallSSHCommand extends Command {
 			return;
 		}
 
-		$install = $items[0];
-
-		$this->info("ssh {$install->name}@{$install->name}.ssh.wpengine.net");
+		foreach ($items as $install) {
+			$this->info(
+				"ssh {$install->name}@{$install->name}.ssh.wpengine.net\n",
+			);
+		}
 	}
 }

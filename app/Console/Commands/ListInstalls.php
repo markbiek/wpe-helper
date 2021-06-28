@@ -15,6 +15,7 @@ class ListInstalls extends Command {
 	protected $signature = 'installs:list
         {--name-only : Only display the WPE install name}
         {--output=pretty : Options are json or pretty. This option is ignored if --name-only is set}
+        {--development : Include development installs}
         {--staging : Include staging installs}
         {--inactive : Include inactive installs}
     ';
@@ -48,6 +49,7 @@ class ListInstalls extends Command {
 		}
 
 		$items = Install::matchQuery('', [
+			'includeDev' => $this->option('development'),
 			'includeStaging' => $this->option('staging'),
 			'includeInactive' => $this->option('inactive'),
 			'nameOnly' => $this->option('name-only'),

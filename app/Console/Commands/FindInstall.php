@@ -17,6 +17,7 @@ class FindInstall extends Command {
         {--name-only : Only display the WPE install name}
         {--output=pretty : Options are json or pretty. This option is ignored if --name-only is set}
         {--staging : Include staging installs}
+        {--development : Include development installs}
         {--inactive : Include inactive installs}
     ';
 
@@ -51,6 +52,7 @@ class FindInstall extends Command {
 		$install = $this->argument('install');
 
 		$items = Install::matchQuery($install, [
+			'includeDev' => $this->option('development'),
 			'includeStaging' => $this->option('staging'),
 			'includeInactive' => $this->option('inactive'),
 			'nameOnly' => $this->option('name-only'),

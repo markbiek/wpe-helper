@@ -37,7 +37,7 @@ You can get the output as JSON with the `--output=json` or only output the insta
 
 ### `installs:list`
 
-List all active, production installs. You can include staging and/or inactive installs with the `--staging` and `--inactive` options.
+List all active, production installs. You can include dev/staging and/or inactive installs with the `--development`/`--staging` and `--inactive` options.
 
 This command also supports `--output-json` and `--name-only`.
 

@@ -33,6 +33,6 @@ class User extends Authenticatable {
 	];
 
 	public function routeNotificationForSlack($notification) {
-		return getenv('SLACK_NOTIFICATION_URL');
+		return env('SLACK_NOTIFICATION_URL');
 	}
 }

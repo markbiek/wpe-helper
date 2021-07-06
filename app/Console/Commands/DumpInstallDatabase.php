@@ -43,7 +43,7 @@ class DumpInstallDatabase extends Command {
 	 * @return mixed
 	 */
 	public function handle() {
-		$defaultKey = getenv('HOME') . '/.ssh/id_rsa';
+		$defaultKey = env('HOME') . '/.ssh/id_rsa';
 
 		if ($this->option('ssh-key')) {
 			$sshKey = $this->option('ssh-key');

@@ -83,7 +83,7 @@ class Install extends Model {
 		]);
 	}
 
-	public function dumpDatabase(bool $gzip = true): string {
+	public function dumpDatabase(bool $gzip = true): ?string {
 		$gzipCmd = $gzip ? '| gzip -c -' : '';
 		$cmd = "ssh {$this->name}@{$this->ssh_host}";
 		$cmd .= " \"mysqldump -u{$this->name} -p'{$this->remote_db_password}' --add-drop-table --no-tablespaces {$this->remote_db_name}";

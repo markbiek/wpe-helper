@@ -52,7 +52,7 @@ class CacheInstalls extends Command {
 			}
 
 			$response = $client->get($url, [
-				'auth' => [env('WPENGINE_USER_NAME'), env('WPENGINE_PASSWORD')],
+				'auth' => [env('WPE_USER_NAME'), env('WPE_PASSWORD')],
 			]);
 
 			$body = $stringBody = (string) $response->getBody();

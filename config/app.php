@@ -1,8 +1,7 @@
 <?php
 
 return [
-
-    /*
+	/*
     |--------------------------------------------------------------------------
     | Application Name
     |--------------------------------------------------------------------------
@@ -13,9 +12,9 @@ return [
     |
     */
 
-    'name' => 'Wpeh',
+	'name' => 'WPEh',
 
-    /*
+	/*
     |--------------------------------------------------------------------------
     | Application Version
     |--------------------------------------------------------------------------
@@ -26,9 +25,9 @@ return [
     |
     */
 
-    'version' => app('git.version'),
+	'version' => app('git.version'),
 
-    /*
+	/*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
@@ -40,9 +39,9 @@ return [
     |
     */
 
-    'env' => 'development',
+	'env' => 'development',
 
-    /*
+	/*
     |--------------------------------------------------------------------------
     | Autoloaded Service Providers
     |--------------------------------------------------------------------------
@@ -53,8 +52,12 @@ return [
     |
     */
 
-    'providers' => [
-        App\Providers\AppServiceProvider::class,
-    ],
+	'providers' => [
+		App\Providers\AppServiceProvider::class,
+		Collective\Remote\RemoteServiceProvider::class,
+	],
 
+	'aliases' => [
+		'SSH' => 'Collective\\Remote\\RemoteFacade',
+	],
 ];

@@ -1,36 +1,75 @@
-<p align="center">
-    <img title="Laravel Zero" height="100" src="https://raw.githubusercontent.com/laravel-zero/docs/master/images/logo/laravel-zero-readme.png" />
-</p>
+# WPEngine Helper
 
-<p align="center">
-  <a href="https://github.com/laravel-zero/framework/actions"><img src="https://img.shields.io/github/workflow/status/laravel-zero/framework/Tests.svg" alt="Build Status"></img></a>
-  <a href="https://packagist.org/packages/laravel-zero/framework"><img src="https://img.shields.io/packagist/dt/laravel-zero/framework.svg" alt="Total Downloads"></a>
-  <a href="https://packagist.org/packages/laravel-zero/framework"><img src="https://img.shields.io/packagist/v/laravel-zero/framework.svg?label=stable" alt="Latest Stable Version"></a>
-  <a href="https://packagist.org/packages/laravel-zero/framework"><img src="https://img.shields.io/packagist/l/laravel-zero/framework.svg" alt="License"></a>
-</p>
+This is a [Laravel Zero](https://laravel-zero.com/) application with a series of commands to help in interacting with WPEngine sites.
 
-<h4> <center>This is a <bold>community project</bold> and not an official Laravel one </center></h4>
+# Setup
 
-Laravel Zero was created by, and is maintained by [Nuno Maduro](https://github.com/nunomaduro), and is a micro-framework that provides an elegant starting point for your console application. It is an **unofficial** and customized version of Laravel optimized for building command-line applications.
+1. Locate your [WPEngine API credentials](https://my.wpengine.com/api_access) and make note of them.
 
-- Built on top of the [Laravel](https://laravel.com) components.
-- Optional installation of Laravel [Eloquent](https://laravel-zero.com/docs/database/), Laravel [Logging](https://laravel-zero.com/docs/logging/) and many others.
-- Supports interactive [menus](https://laravel-zero.com/docs/build-interactive-menus/) and [desktop notifications](https://laravel-zero.com/docs/send-desktop-notifications/) on Linux, Windows & MacOS.
-- Ships with a [Scheduler](https://laravel-zero.com/docs/task-scheduling/) and  a [Standalone Compiler](https://laravel-zero.com/docs/build-a-standalone-application/).
-- Integration with [Collision](https://github.com/nunomaduro/collision) - Beautiful error reporting
+## User Setup
 
-------
+If you've downloaded the `wpeh` binary release, all you have to do is run
 
-## Documentation
+```
+wpeh setup
+```
 
-For full documentation, visit [laravel-zero.com](https://laravel-zero.com/).
+and enter your WPE api credentials when prompted
 
-## Support the development
-**Do you like this project? Support it by donating**
+## Developer Setup
 
-- PayPal: [Donate](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=66BYDWAT92N6L)
-- Patreon: [Donate](https://www.patreon.com/nunomaduro)
+1. Copy `.env.example` to `.env`
+1. Edit `.env` to fill in the appropriate values for your database connection
+1. `composer install`
+1. `npm install`
 
-## License
+## Available Commands
 
-Laravel Zero is an open-source software licensed under the MIT license.
+### `installs:find`
+
+Given a partial name, find any matching installs and return information about them.
+
+By default, data is displayed in the following form:
+
+```
+name: <install name>
+domain: <install primary domain>
+environment: <wpe environment type (production/staging/etc)>
+url: <wpe install dashboard url>
+```
+
+You can get the output as JSON with the `--output=json` or only output the install name with `--name-only`.
+
+### `installs:list`
+
+List all active, production installs. You can include dev/staging and/or inactive installs with the `--development`/`--staging` and `--inactive` options.
+
+This command also supports `--output-json` and `--name-only`.
+
+### `installs:ssh`
+
+Displays the command to connect to an install via ssh.
+
+You can find the command and connect in one step likes so:
+
+```
+`wpeh installs:ssh myinstall`
+```
+
+### `installs:dump-db`
+
+Dump the contents of an install database. Output is sent to STDOUT and is gzipped by default. You can use `--raw` to get an uncompressed dump.
+
+Example
+
+```
+wpeh installs:dump-db myinstall > myinstall.sql.gz
+```
+
+### `installs:cache`
+
+The wpe helper stores information about all of your WPEngine installs in the database to make for faster queries. This command refreshes that database cache.
+
+### `installs:clear`
+
+Deletes all entries in the database cache.

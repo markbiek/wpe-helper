@@ -19,6 +19,7 @@
         "php": "^7.3|^8.0",
         "guzzlehttp/guzzle": "^7.4",
         "illuminate/database": "^8.40",
+        "intonate/tinker-zero": "^1.2",
         "laminas/laminas-text": "^2.8",
         "laravel-zero/framework": "^8.8",
         "laravelcollective/remote": "^6.2",

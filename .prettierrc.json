@@ -1,0 +1,17 @@
+{
+	"singleQuote": true,
+	"jsxSingleQuote": true,
+	"useTabs": true,
+	"tabWidth": 2,
+	"overrides": [
+		{
+			"files": "*.php",
+			"options": {
+				"phpVersion": "7.4",
+				"singleQuote": true,
+				"trailingCommaPHP": true,
+				"braceStyle": "1tbs"
+			}
+		}
+	]
+}

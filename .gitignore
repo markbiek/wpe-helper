@@ -1,8 +1,8 @@
 node_modules/
+database/database.sqlite
 /vendor
 /.idea
 /.vscode
 /.vagrant
 .phpunit.result.cache
-/database/database.sqlite
 .env

@@ -37,6 +37,17 @@ class Setup extends Command {
 	 * @return mixed
 	 */
 	public function handle() {
+		$path = config('database.connections.sqlite.database');
+		$pathInfo = pathinfo($path);
+		if (!file_exists($pathInfo['dirname'])) {
+			mkdir($pathInfo['dirname']);
+
+			$source = __DIR__ . '/../../database/database.sqlite';
+			copy($source, $path);
+		}
+
+		$this->call('migrate');
+
 		Setting::unset('WPE_USER_NAME');
 		Setting::unset('WPE_PASSWORD');
 

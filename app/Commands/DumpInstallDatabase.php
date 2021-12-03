@@ -18,7 +18,7 @@ class DumpInstallDatabase extends Command {
         {--development : Include development installs}
         {--staging : Include staging installs}
         {--raw : Dump the database uncompressed. Output is gzipped by default}
-		{--ssh-key= : The ssh key to use for connections}
+		{--ssh-key= : The ssh key to use for connections. Default is ~/.ssh/id_rsa}
     ';
 
 	/**

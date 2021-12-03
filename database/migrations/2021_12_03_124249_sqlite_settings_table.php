@@ -13,7 +13,10 @@ class SqliteSettingsTable extends Migration {
 	public function up() {
 		Schema::create('settings', function (Blueprint $table) {
 			$table->id();
-			$table->string('key')->nullable(false);
+			$table
+				->string('key')
+				->nullable(false)
+				->unique();
 			$table
 				->string('value')
 				->nullable(false)

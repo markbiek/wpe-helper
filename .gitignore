@@ -1,5 +1,4 @@
 node_modules/
-database/database.sqlite
 /vendor
 /.idea
 /.vscode

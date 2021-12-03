@@ -55,6 +55,7 @@ return [
 	'providers' => [
 		App\Providers\AppServiceProvider::class,
 		Collective\Remote\RemoteServiceProvider::class,
+		Intonate\TinkerZero\TinkerZeroServiceProvider::class,
 	],
 
 	'aliases' => [

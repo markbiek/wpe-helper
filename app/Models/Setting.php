@@ -27,9 +27,7 @@ class Setting extends Model {
 	}
 
 	public static function has(string $key): bool {
-		return Setting::where('key', $key)
-			->first()
-			->exists();
+		return Setting::where('key', $key)->exists();
 	}
 
 	public static function unset(string $key): ?string {

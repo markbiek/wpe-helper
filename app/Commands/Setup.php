@@ -5,7 +5,7 @@ namespace App\Commands;
 use LaravelZero\Framework\Commands\Command;
 use Illuminate\Support\Facades\DB;
 
-use App\Models\EnvironmentTemplate;
+use App\Models\Setting;
 
 class Setup extends Command {
 	/**
@@ -37,25 +37,18 @@ class Setup extends Command {
 	 * @return mixed
 	 */
 	public function handle() {
-		$envFile = __DIR__ . '/../../.env';
-		if (file_exists($envFile)) {
-			$this->error(
-				'A .env environment file already exists. Please remove it and try setup again.',
-			);
-			return;
-		}
+		Setting::unset('WPE_USER_NAME');
+		Setting::unset('WPE_PASSWORD');
 
-		$dbHost = $this->ask('Database host:', '127.0.0.1');
-		$dbName = $this->ask('Database name:');
-		$dbUser = $this->ask('Database user:');
-		$dbPass = $this->secret('Database password:');
 		$wpeUser = $this->ask('WPEngine user:');
 		$wpePass = $this->secret('WPEngine password:');
 
-		$template = new EnvironmentTemplate();
-		file_put_contents(
-			$envFile,
-			$template->render($dbHost, $dbName, $dbUser, $dbPass, $wpeUser, $wpePass),
-		);
+		Setting::set('WPE_USER_NAME', $wpeUser);
+		Setting::set('WPE_PASSWORD', $wpePass);
+
+		$this->call('installs:clear');
+		$this->call('installs:cache');
+
+		$this->info('Setup complete');
 	}
 }

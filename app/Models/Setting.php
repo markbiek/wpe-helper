@@ -10,10 +10,15 @@ class Setting extends Model {
 	protected $fillable = ['key', 'value'];
 
 	public static function set(string $key, string $value): void {
-		Setting::create([
-			'key' => $key,
-			'value' => $value,
-		]);
+		Setting::updateOrCreate(
+			[
+				'key' => $key,
+			],
+			[
+				'key' => $key,
+				'value' => $value,
+			],
+		);
 	}
 
 	public static function get(string $key): ?string {

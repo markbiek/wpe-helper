@@ -4,19 +4,21 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddPluginUpdate extends Migration {
+class SqliteSettingsTable extends Migration {
 	/**
 	 * Run the migrations.
 	 *
 	 * @return void
 	 */
 	public function up() {
-		Schema::table('installs', function (Blueprint $table) {
+		Schema::create('settings', function (Blueprint $table) {
+			$table->id();
+			$table->string('key')->nullable(false);
 			$table
-				->boolean('plugin_updates')
-				->after('php_version')
+				->string('value')
 				->nullable(false)
-				->default(true);
+				->default('');
+			$table->timestamps();
 		});
 	}
 
@@ -26,8 +28,6 @@ class AddPluginUpdate extends Migration {
 	 * @return void
 	 */
 	public function down() {
-		Schema::table('installs', function (Blueprint $table) {
-			$table->dropColumn('plugin_updates');
-		});
+		Schema::dropIfExists('settings');
 	}
 }
